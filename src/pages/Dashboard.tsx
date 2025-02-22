@@ -1,7 +1,8 @@
+
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CreditCard, Calendar, ArrowRight, FileText, User, Mail, Phone, X } from "lucide-react";
+import { CreditCard, Calendar, ArrowRight, FileText, User, Mail, Phone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/components/ui/use-toast";
@@ -123,7 +124,15 @@ const Dashboard = () => {
   };
 
   const handlePayment = () => {
-    window.location.href = "/payment";
+    if (!debtCase?.payment_link_url) {
+      toast({
+        title: "Error",
+        description: "Payment link is not available. Please try again later.",
+        variant: "destructive",
+      });
+      return;
+    }
+    window.location.href = debtCase.payment_link_url;
   };
 
   if (isLoading) {
@@ -247,6 +256,7 @@ const Dashboard = () => {
             <Button
               onClick={handlePayment}
               className="bg-primary hover:bg-primary/90 text-primary-foreground group"
+              disabled={!debtCase.payment_link_url}
             >
               Make Payment
               <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
@@ -279,3 +289,4 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+
