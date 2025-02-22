@@ -28,12 +28,12 @@ interface DebtCase {
   due_date: string;
   case_description: string | null;
   case_number: string;
-  files?: DebtFile[];
   debtor?: Debtor;
 }
 
 const Dashboard = () => {
   const [debtCase, setDebtCase] = useState<DebtCase | null>(null);
+  const [documents, setDocuments] = useState<DebtFile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const location = useLocation();
@@ -63,6 +63,23 @@ const Dashboard = () => {
 
         if (data) {
           setDebtCase(data);
+          // After getting the case data, fetch the documents
+          if (data.id) {
+            const { data: attachments, error: attachmentsError } = await supabase.functions.invoke('get-case-attachments', {
+              body: { case_id: data.id }
+            });
+
+            if (attachmentsError) {
+              console.error('Error fetching documents:', attachmentsError);
+              toast({
+                title: "Warning",
+                description: "Could not load documents. Please try again later.",
+                variant: "destructive",
+              });
+            } else if (attachments) {
+              setDocuments(attachments);
+            }
+          }
         }
       } catch (error) {
         console.error("Error fetching debt information:", error);
@@ -161,12 +178,12 @@ const Dashboard = () => {
           </Card>
         )}
 
-        {debtCase.files && debtCase.files.length > 0 && (
+        {documents.length > 0 && (
           <Card className="p-6">
-            <h2 className="text-xl font-semibold mb-4">Documentation</h2>
+            <h2 className="text-xl font-semibold mb-4">Documents</h2>
             <ScrollArea className="h-[200px] w-full rounded-md border p-4">
               <div className="space-y-4">
-                {debtCase.files.map((file, index) => (
+                {documents.map((file, index) => (
                   <div
                     key={index}
                     className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg"
