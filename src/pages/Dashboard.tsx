@@ -29,6 +29,7 @@ interface DebtCase {
   due_date: string;
   case_description: string | null;
   case_number: string;
+  payment_link_url: string | null;
   debtor?: Debtor;
 }
 
