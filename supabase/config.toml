@@ -3,3 +3,4 @@ project_id = "wgrthafbdhesqyapbskd"
 
 [functions.get-debt-case]
 verify_jwt = false
+

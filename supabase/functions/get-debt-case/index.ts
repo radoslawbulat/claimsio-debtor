@@ -34,7 +34,13 @@ serve(async (req) => {
     // First, find the debtor by phone number
     const { data: debtorData, error: debtorError } = await supabase
       .from('debtors')
-      .select('id')
+      .select(`
+        id,
+        first_name,
+        last_name,
+        email,
+        phone_number
+      `)
       .eq('phone_number', phone_number)
       .maybeSingle()
 
@@ -64,7 +70,8 @@ serve(async (req) => {
         debt_remaining,
         due_date,
         case_description,
-        case_number
+        case_number,
+        payment_link_url
       `)
       .eq('debtor_id', debtorData.id)
       .maybeSingle()
@@ -86,26 +93,11 @@ serve(async (req) => {
 
     console.log('Found case with ID:', caseData.id)
 
-    // Fetch associated files
-    const { data: filesData, error: filesError } = await supabase
-      .from('case_attachments')
-      .select('*')
-      .eq('case_id', caseData.id)
-
-    if (filesError) {
-      console.error('Error fetching files:', filesError)
-      return new Response(
-        JSON.stringify({ error: 'Failed to fetch case attachments' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-      )
-    }
-
+    // Return both debtor and case information
     const result = {
       ...caseData,
-      files: filesData || [],
+      debtor: debtorData
     }
-
-    console.log('Successfully fetched all data')
 
     return new Response(
       JSON.stringify(result),
@@ -119,3 +111,4 @@ serve(async (req) => {
     )
   }
 })
+
