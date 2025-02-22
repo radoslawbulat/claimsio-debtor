@@ -120,6 +120,7 @@ export type Database = {
           created_at: string
           direction: Database["public"]["Enums"]["comms_direction"]
           id: string
+          response: boolean | null
           status: Database["public"]["Enums"]["comms_status"]
           updated_at: string
         }
@@ -130,6 +131,7 @@ export type Database = {
           created_at?: string
           direction: Database["public"]["Enums"]["comms_direction"]
           id?: string
+          response?: boolean | null
           status: Database["public"]["Enums"]["comms_status"]
           updated_at?: string
         }
@@ -140,6 +142,7 @@ export type Database = {
           created_at?: string
           direction?: Database["public"]["Enums"]["comms_direction"]
           id?: string
+          response?: boolean | null
           status?: Database["public"]["Enums"]["comms_status"]
           updated_at?: string
         }
@@ -195,6 +198,24 @@ export type Database = {
           total_debt_amount?: number
           total_debt_remaining?: number
           updated_at?: string
+        }
+        Relationships: []
+      }
+      n8n_chat_histories: {
+        Row: {
+          id: number
+          message: Json
+          session_id: string
+        }
+        Insert: {
+          id?: number
+          message: Json
+          session_id: string
+        }
+        Update: {
+          id?: number
+          message?: Json
+          session_id?: string
         }
         Relationships: []
       }
