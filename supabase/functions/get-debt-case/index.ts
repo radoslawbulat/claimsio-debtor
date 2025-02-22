@@ -1,35 +1,28 @@
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
+import { createClient } from '@supabase/supabase-js';
+import { corsHeaders } from '../_shared/cors.ts';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
-
-serve(async (req) => {
-  // Handle CORS preflight requests
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { phone_number } = await req.json()
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    const { phone_number } = await req.json();
 
     if (!phone_number) {
       return new Response(
         JSON.stringify({ error: 'Phone number is required' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-      )
+      );
     }
 
-    // Initialize Supabase client
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
-
-    console.log('Fetching debtor information for phone number:', phone_number)
+    console.log('Looking up debtor with phone number:', phone_number);
 
     // First, find the debtor by phone number
     const { data: debtorData, error: debtorError } = await supabase
@@ -42,26 +35,27 @@ serve(async (req) => {
         phone_number
       `)
       .eq('phone_number', phone_number)
-      .maybeSingle()
+      .maybeSingle();
 
     if (debtorError) {
-      console.error('Error fetching debtor:', debtorError)
+      console.error('Error fetching debtor:', debtorError);
       return new Response(
         JSON.stringify({ error: 'Failed to fetch debtor information' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-      )
+      );
     }
 
     if (!debtorData) {
+      console.log('No debtor found with phone number:', phone_number);
       return new Response(
         JSON.stringify({ error: 'Debtor not found' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
-      )
+      );
     }
 
-    console.log('Found debtor with ID:', debtorData.id)
+    console.log('Found debtor with ID:', debtorData.id);
 
-    // Fetch the case information for this debtor
+    // Then, fetch the case information
     const { data: caseData, error: caseError } = await supabase
       .from('cases')
       .select(`
@@ -71,44 +65,63 @@ serve(async (req) => {
         due_date,
         case_description,
         case_number,
-        payment_link_url
+        payment_link_url,
+        status
       `)
       .eq('debtor_id', debtorData.id)
-      .maybeSingle()
+      .maybeSingle();
 
     if (caseError) {
-      console.error('Error fetching case:', caseError)
+      console.error('Error fetching case:', caseError);
       return new Response(
         JSON.stringify({ error: 'Failed to fetch case information' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-      )
+      );
     }
 
     if (!caseData) {
+      console.log('No case found for debtor:', debtorData.id);
       return new Response(
-        JSON.stringify({ error: 'No case found for this debtor' }),
+        JSON.stringify({ error: 'Case not found' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
-      )
+      );
     }
 
-    console.log('Found case with ID:', caseData.id)
+    console.log('Found case with ID:', caseData.id);
 
-    // Return both debtor and case information
+    // Fetch payment history
+    const { data: paymentsData, error: paymentsError } = await supabase
+      .from('payments')
+      .select('*')
+      .eq('case_id', caseData.id)
+      .order('created_at', { ascending: false });
+
+    if (paymentsError) {
+      console.error('Error fetching payments:', paymentsError);
+      return new Response(
+        JSON.stringify({ error: 'Failed to fetch payment history' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      );
+    }
+
+    // Return all information
     const result = {
       ...caseData,
-      debtor: debtorData
-    }
+      debtor: debtorData,
+      payments: paymentsData || []
+    };
 
     return new Response(
       JSON.stringify(result),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
-    )
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+
   } catch (error) {
-    console.error('Unexpected error:', error)
+    console.error('Unexpected error:', error);
     return new Response(
-      JSON.stringify({ error: 'An unexpected error occurred' }),
+      JSON.stringify({ error: 'Internal server error' }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-    )
+    );
   }
-})
+});
 

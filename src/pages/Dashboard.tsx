@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CreditCard, Calendar, ArrowRight, FileText, User, Mail, Phone } from "lucide-react";
+import { CreditCard, Calendar, ArrowRight, FileText, User, Mail, Phone, CheckCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/components/ui/use-toast";
@@ -22,6 +22,15 @@ interface Debtor {
   phone_number: string | null;
 }
 
+interface Payment {
+  id: string;
+  amount_received: number;
+  created_at: string;
+  payment_method: string | null;
+  status: string;
+  currency: string;
+}
+
 interface DebtCase {
   id: string;
   debt_amount: number;
@@ -30,7 +39,9 @@ interface DebtCase {
   case_description: string | null;
   case_number: string;
   payment_link_url: string | null;
+  status: "ACTIVE" | "CLOSED";
   debtor?: Debtor;
+  payments?: Payment[];
 }
 
 const Dashboard = () => {
@@ -155,6 +166,44 @@ const Dashboard = () => {
     );
   }
 
+  const renderPaymentHistory = () => {
+    if (!debtCase.payments?.length) {
+      return (
+        <div className="text-center py-4 text-gray-500">
+          No payment history available
+        </div>
+      );
+    }
+
+    return debtCase.payments.map((payment) => (
+      <div
+        key={payment.id}
+        className="flex items-center justify-between p-4 border-b last:border-0"
+      >
+        <div className="space-y-1">
+          <p className="font-medium">
+            {payment.currency.toUpperCase()} {payment.amount_received.toLocaleString()}
+          </p>
+          <p className="text-sm text-gray-500">
+            {new Date(payment.created_at).toLocaleDateString()}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          {payment.payment_method && (
+            <span className="text-sm text-gray-500">{payment.payment_method}</span>
+          )}
+          <span className={`px-2 py-1 rounded-full text-xs ${
+            payment.status === 'completed' 
+              ? 'bg-green-100 text-green-800' 
+              : 'bg-gray-100 text-gray-800'
+          }`}>
+            {payment.status}
+          </span>
+        </div>
+      </div>
+    ));
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto space-y-8 animate-fadeIn">
@@ -187,83 +236,102 @@ const Dashboard = () => {
           </Card>
         )}
 
-        <Card className="p-6 space-y-6">
-          <div className="space-y-2">
-            <p className="text-sm text-gray-500">Total Outstanding</p>
-            <p className="text-3xl font-semibold text-gray-900">
-              ${debtCase.debt_remaining.toLocaleString()}
-            </p>
-          </div>
-
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 text-gray-600">
-              <Calendar className="h-5 w-5" />
-              <span>Due Date: {new Date(debtCase.due_date).toLocaleDateString()}</span>
-            </div>
-            <div className="flex items-center gap-2 text-gray-600">
-              <CreditCard className="h-5 w-5" />
-              <span>Case: {debtCase.case_number}</span>
-            </div>
-          </div>
-        </Card>
-
-        {debtCase.case_description && (
-          <Card className="p-6">
-            <h2 className="text-xl font-semibold mb-4">Case Description</h2>
-            <p className="text-gray-700">{debtCase.case_description}</p>
-          </Card>
-        )}
-
-        {documents.length > 0 && (
-          <Card className="p-6">
-            <h2 className="text-xl font-semibold mb-4">Documents</h2>
-            <ScrollArea className="h-[200px] w-full rounded-md border p-4">
-              <div className="space-y-4">
-                {documents.map((file, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg"
-                  >
-                    <div className="flex items-center gap-3">
-                      <FileText className="h-5 w-5 text-gray-500" />
-                      <div>
-                        <p className="font-medium text-sm">{file.file_name}</p>
-                        {file.description && (
-                          <p className="text-sm text-gray-500">{file.description}</p>
-                        )}
-                      </div>
-                    </div>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="ml-2"
-                      onClick={() => handleViewFile(file)}
-                    >
-                      View
-                    </Button>
-                  </div>
-                ))}
+        {debtCase.status === 'CLOSED' ? (
+          <Card className="p-6 space-y-6">
+            <div className="text-center space-y-4">
+              <div className="flex justify-center">
+                <CheckCircle className="h-12 w-12 text-green-500" />
               </div>
-            </ScrollArea>
-          </Card>
-        )}
-
-        <Card className="p-6 bg-gradient-to-r from-primary/5 to-primary/10">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="text-center sm:text-left">
-              <h2 className="text-xl font-semibold text-gray-900">Ready to make a payment?</h2>
-              <p className="text-gray-500">Pay securely through our payment gateway</p>
+              <h2 className="text-xl font-semibold text-gray-900">No Active Debts</h2>
+              <p className="text-gray-500">All your debts have been settled. Thank you!</p>
             </div>
-            <Button
-              onClick={handlePayment}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground group"
-              disabled={!debtCase.payment_link_url}
-            >
-              Make Payment
-              <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-            </Button>
-          </div>
-        </Card>
+
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold border-b pb-2">Payment History</h3>
+              {renderPaymentHistory()}
+            </div>
+          </Card>
+        ) : (
+          <>
+            <Card className="p-6 space-y-6">
+              <div className="space-y-2">
+                <p className="text-sm text-gray-500">Total Outstanding</p>
+                <p className="text-3xl font-semibold text-gray-900">
+                  ${debtCase.debt_remaining.toLocaleString()}
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 text-gray-600">
+                  <Calendar className="h-5 w-5" />
+                  <span>Due Date: {new Date(debtCase.due_date).toLocaleDateString()}</span>
+                </div>
+                <div className="flex items-center gap-2 text-gray-600">
+                  <CreditCard className="h-5 w-5" />
+                  <span>Case: {debtCase.case_number}</span>
+                </div>
+              </div>
+            </Card>
+
+            {debtCase.case_description && (
+              <Card className="p-6">
+                <h2 className="text-xl font-semibold mb-4">Case Description</h2>
+                <p className="text-gray-700">{debtCase.case_description}</p>
+              </Card>
+            )}
+
+            {documents.length > 0 && (
+              <Card className="p-6">
+                <h2 className="text-xl font-semibold mb-4">Documents</h2>
+                <ScrollArea className="h-[200px] w-full rounded-md border p-4">
+                  <div className="space-y-4">
+                    {documents.map((file, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg"
+                      >
+                        <div className="flex items-center gap-3">
+                          <FileText className="h-5 w-5 text-gray-500" />
+                          <div>
+                            <p className="font-medium text-sm">{file.file_name}</p>
+                            {file.description && (
+                              <p className="text-sm text-gray-500">{file.description}</p>
+                            )}
+                          </div>
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="ml-2"
+                          onClick={() => handleViewFile(file)}
+                        >
+                          View
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </Card>
+            )}
+
+            <Card className="p-6 bg-gradient-to-r from-primary/5 to-primary/10">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="text-center sm:text-left">
+                  <h2 className="text-xl font-semibold text-gray-900">Ready to make a payment?</h2>
+                  <p className="text-gray-500">Pay securely through our payment gateway</p>
+                </div>
+                <Button
+                  onClick={handlePayment}
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground group"
+                  disabled={!debtCase.payment_link_url}
+                >
+                  Make Payment
+                  <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </Button>
+              </div>
+            </Card>
+          </>
+        )}
       </div>
 
       <Dialog open={!!previewUrl} onOpenChange={() => {
