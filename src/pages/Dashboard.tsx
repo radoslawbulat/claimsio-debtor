@@ -78,7 +78,6 @@ const Dashboard = () => {
 
         if (data) {
           setDebtCase(data);
-          // After getting the case data, fetch the documents
           if (data.id) {
             const { data: attachments, error: attachmentsError } = await supabase.functions.invoke('get-case-attachments', {
               body: { case_id: data.id }
@@ -115,7 +114,7 @@ const Dashboard = () => {
     try {
       const { data: fileUrl, error } = await supabase.storage
         .from('case-attachments')
-        .createSignedUrl(file.storage_path, 3600); // URL valid for 1 hour
+        .createSignedUrl(file.storage_path, 3600);
 
       if (error) {
         throw error;
@@ -159,18 +158,18 @@ const Dashboard = () => {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-xl font-semibold text-gray-900">No Debt Information Found</h2>
-          <p className="text-gray-500 mt-2">We couldn't find any debt information for this account.</p>
+          <h2 className="text-xl font-semibold text-gray-900">No Case Information Found</h2>
+          <p className="text-gray-500 mt-2">We couldn't find any case information for this account.</p>
         </div>
       </div>
     );
   }
 
-  const renderPaymentHistory = () => {
+  const renderCaseHistory = () => {
     if (!debtCase.payments?.length) {
       return (
         <div className="text-center py-4 text-gray-500">
-          No payment history available
+          No case history available
         </div>
       );
     }
@@ -209,7 +208,7 @@ const Dashboard = () => {
       <div className="max-w-4xl mx-auto space-y-8 animate-fadeIn">
         <div className="text-center space-y-2">
           <h1 className="text-3xl font-semibold text-gray-900">Your Account</h1>
-          <p className="text-gray-500">View and manage your payment details</p>
+          <p className="text-gray-500">View and manage your case details</p>
         </div>
 
         {debtCase.debtor && (
@@ -236,102 +235,99 @@ const Dashboard = () => {
           </Card>
         )}
 
-        {debtCase.status === 'CLOSED' ? (
-          <Card className="p-6 space-y-6">
-            <div className="text-center space-y-4">
-              <div className="flex justify-center">
-                <CheckCircle className="h-12 w-12 text-green-500" />
-              </div>
-              <h2 className="text-xl font-semibold text-gray-900">No Active Debts</h2>
-              <p className="text-gray-500">All your debts have been settled. Thank you!</p>
+        <Card className="p-6 space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="space-y-2">
+              <p className="text-sm text-gray-500">Total Outstanding</p>
+              <p className="text-3xl font-semibold text-gray-900">
+                ${debtCase.debt_remaining.toLocaleString()}
+              </p>
             </div>
+            <span className={`px-3 py-1 rounded-full text-sm ${
+              debtCase.status === 'ACTIVE' 
+                ? 'bg-blue-100 text-blue-800' 
+                : 'bg-green-100 text-green-800'
+            }`}>
+              {debtCase.status}
+            </span>
+          </div>
 
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold border-b pb-2">Payment History</h3>
-              {renderPaymentHistory()}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-gray-600">
+              <Calendar className="h-5 w-5" />
+              <span>Due Date: {new Date(debtCase.due_date).toLocaleDateString()}</span>
+            </div>
+            <div className="flex items-center gap-2 text-gray-600">
+              <CreditCard className="h-5 w-5" />
+              <span>Case: {debtCase.case_number}</span>
+            </div>
+          </div>
+        </Card>
+
+        {debtCase.case_description && (
+          <Card className="p-6">
+            <h2 className="text-xl font-semibold mb-4">Case Description</h2>
+            <p className="text-gray-700">{debtCase.case_description}</p>
+          </Card>
+        )}
+
+        {documents.length > 0 && (
+          <Card className="p-6">
+            <h2 className="text-xl font-semibold mb-4">Documents</h2>
+            <ScrollArea className="h-[200px] w-full rounded-md border p-4">
+              <div className="space-y-4">
+                {documents.map((file, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg"
+                  >
+                    <div className="flex items-center gap-3">
+                      <FileText className="h-5 w-5 text-gray-500" />
+                      <div>
+                        <p className="font-medium text-sm">{file.file_name}</p>
+                        {file.description && (
+                          <p className="text-sm text-gray-500">{file.description}</p>
+                        )}
+                      </div>
+                    </div>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="ml-2"
+                      onClick={() => handleViewFile(file)}
+                    >
+                      View
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+          </Card>
+        )}
+
+        {debtCase.status === 'ACTIVE' && (
+          <Card className="p-6 bg-gradient-to-r from-primary/5 to-primary/10">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="text-center sm:text-left">
+                <h2 className="text-xl font-semibold text-gray-900">Ready to make a payment?</h2>
+                <p className="text-gray-500">Pay securely through our payment gateway</p>
+              </div>
+              <Button
+                onClick={handlePayment}
+                className="bg-primary hover:bg-primary/90 text-primary-foreground group"
+                disabled={!debtCase.payment_link_url}
+              >
+                Make Payment
+                <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+              </Button>
             </div>
           </Card>
-        ) : (
-          <>
-            <Card className="p-6 space-y-6">
-              <div className="space-y-2">
-                <p className="text-sm text-gray-500">Total Outstanding</p>
-                <p className="text-3xl font-semibold text-gray-900">
-                  ${debtCase.debt_remaining.toLocaleString()}
-                </p>
-              </div>
-
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 text-gray-600">
-                  <Calendar className="h-5 w-5" />
-                  <span>Due Date: {new Date(debtCase.due_date).toLocaleDateString()}</span>
-                </div>
-                <div className="flex items-center gap-2 text-gray-600">
-                  <CreditCard className="h-5 w-5" />
-                  <span>Case: {debtCase.case_number}</span>
-                </div>
-              </div>
-            </Card>
-
-            {debtCase.case_description && (
-              <Card className="p-6">
-                <h2 className="text-xl font-semibold mb-4">Case Description</h2>
-                <p className="text-gray-700">{debtCase.case_description}</p>
-              </Card>
-            )}
-
-            {documents.length > 0 && (
-              <Card className="p-6">
-                <h2 className="text-xl font-semibold mb-4">Documents</h2>
-                <ScrollArea className="h-[200px] w-full rounded-md border p-4">
-                  <div className="space-y-4">
-                    {documents.map((file, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg"
-                      >
-                        <div className="flex items-center gap-3">
-                          <FileText className="h-5 w-5 text-gray-500" />
-                          <div>
-                            <p className="font-medium text-sm">{file.file_name}</p>
-                            {file.description && (
-                              <p className="text-sm text-gray-500">{file.description}</p>
-                            )}
-                          </div>
-                        </div>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="ml-2"
-                          onClick={() => handleViewFile(file)}
-                        >
-                          View
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </ScrollArea>
-              </Card>
-            )}
-
-            <Card className="p-6 bg-gradient-to-r from-primary/5 to-primary/10">
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="text-center sm:text-left">
-                  <h2 className="text-xl font-semibold text-gray-900">Ready to make a payment?</h2>
-                  <p className="text-gray-500">Pay securely through our payment gateway</p>
-                </div>
-                <Button
-                  onClick={handlePayment}
-                  className="bg-primary hover:bg-primary/90 text-primary-foreground group"
-                  disabled={!debtCase.payment_link_url}
-                >
-                  Make Payment
-                  <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-                </Button>
-              </div>
-            </Card>
-          </>
         )}
+
+        <Card className="p-6">
+          <h3 className="text-lg font-semibold border-b pb-2 mb-4">Case History</h3>
+          {renderCaseHistory()}
+        </Card>
       </div>
 
       <Dialog open={!!previewUrl} onOpenChange={() => {
@@ -358,4 +354,3 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-
