@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -261,18 +260,8 @@ const Dashboard = () => {
         setSelectedFile(null);
       }}>
         <DialogContent className="max-w-4xl w-full">
-          <div className="flex items-center justify-between mb-4">
+          <div className="mb-4">
             <h2 className="text-xl font-semibold">{selectedFile}</h2>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setPreviewUrl(null);
-                setSelectedFile(null);
-              }}
-            >
-              <X className="h-4 w-4" />
-            </Button>
           </div>
           <div className="relative w-full" style={{ height: "80vh" }}>
             {previewUrl && (
@@ -290,4 +279,3 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-
