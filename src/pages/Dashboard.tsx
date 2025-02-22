@@ -22,15 +22,6 @@ interface Debtor {
   phone_number: string | null;
 }
 
-interface Payment {
-  id: string;
-  amount_received: number;
-  created_at: string;
-  payment_method: string | null;
-  status: string;
-  currency: string;
-}
-
 interface DebtCase {
   id: string;
   debt_amount: number;
@@ -41,7 +32,6 @@ interface DebtCase {
   payment_link_url: string | null;
   status: "ACTIVE" | "CLOSED";
   debtor?: Debtor;
-  payments?: Payment[];
 }
 
 const Dashboard = () => {
@@ -50,6 +40,7 @@ const Dashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [cases, setCases] = useState<DebtCase[]>([]);
   const { toast } = useToast();
   const location = useLocation();
   const navigate = useNavigate();
@@ -78,6 +69,7 @@ const Dashboard = () => {
 
         if (data) {
           setDebtCase(data);
+          setCases([data]); // Initialize cases with the current case
           // After getting the case data, fetch the documents
           if (data.id) {
             const { data: attachments, error: attachmentsError } = await supabase.functions.invoke('get-case-attachments', {
@@ -166,40 +158,33 @@ const Dashboard = () => {
     );
   }
 
-  const renderPaymentHistory = () => {
-    if (!debtCase.payments?.length) {
+  const renderCasesList = () => {
+    if (!cases.length) {
       return (
         <div className="text-center py-4 text-gray-500">
-          No payment history available
+          No cases available
         </div>
       );
     }
 
-    return debtCase.payments.map((payment) => (
+    return cases.map((case_) => (
       <div
-        key={payment.id}
+        key={case_.id}
         className="flex items-center justify-between p-4 border-b last:border-0"
       >
         <div className="space-y-1">
-          <p className="font-medium">
-            {payment.currency.toUpperCase()} {payment.amount_received.toLocaleString()}
-          </p>
+          <p className="font-medium">Case: {case_.case_number}</p>
           <p className="text-sm text-gray-500">
-            {new Date(payment.created_at).toLocaleDateString()}
+            Outstanding: ${case_.debt_remaining.toLocaleString()}
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          {payment.payment_method && (
-            <span className="text-sm text-gray-500">{payment.payment_method}</span>
-          )}
-          <span className={`px-2 py-1 rounded-full text-xs ${
-            payment.status === 'completed' 
-              ? 'bg-green-100 text-green-800' 
-              : 'bg-gray-100 text-gray-800'
-          }`}>
-            {payment.status}
-          </span>
-        </div>
+        <span className={`px-3 py-1 rounded-full text-sm ${
+          case_.status === 'ACTIVE' 
+            ? 'bg-blue-100 text-blue-800' 
+            : 'bg-green-100 text-green-800'
+        }`}>
+          {case_.status}
+        </span>
       </div>
     ));
   };
@@ -236,22 +221,14 @@ const Dashboard = () => {
           </Card>
         )}
 
-        {debtCase.status === 'CLOSED' ? (
-          <Card className="p-6 space-y-6">
-            <div className="text-center space-y-4">
-              <div className="flex justify-center">
-                <CheckCircle className="h-12 w-12 text-green-500" />
-              </div>
-              <h2 className="text-xl font-semibold text-gray-900">No Active Debts</h2>
-              <p className="text-gray-500">All your debts have been settled. Thank you!</p>
-            </div>
+        <Card className="p-6">
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold border-b pb-2">Cases Overview</h3>
+            {renderCasesList()}
+          </div>
+        </Card>
 
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold border-b pb-2">Payment History</h3>
-              {renderPaymentHistory()}
-            </div>
-          </Card>
-        ) : (
+        {debtCase.status === "ACTIVE" && (
           <>
             <Card className="p-6 space-y-6">
               <div className="space-y-2">
