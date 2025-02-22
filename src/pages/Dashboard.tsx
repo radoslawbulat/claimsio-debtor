@@ -6,6 +6,7 @@ import { CreditCard, Calendar, ArrowRight, FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/components/ui/use-toast";
+import { useLocation, useNavigate } from "react-router-dom";
 
 interface DebtFile {
   file_name: string;
@@ -27,15 +28,25 @@ const Dashboard = () => {
   const [debtCase, setDebtCase] = useState<DebtCase | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const phoneNumber = location.state?.phoneNumber;
 
   useEffect(() => {
+    if (!phoneNumber) {
+      toast({
+        title: "Error",
+        description: "No phone number provided. Please login again.",
+        variant: "destructive",
+      });
+      navigate("/login");
+      return;
+    }
+
     const fetchDebtInformation = async () => {
       try {
-        // For now, we'll mock the phone number
-        const mockPhoneNumber = "+48123456789";
-
         const { data, error } = await supabase.functions.invoke('get-debt-case', {
-          body: { phone_number: mockPhoneNumber }
+          body: { phone_number: phoneNumber }
         });
 
         if (error) {
@@ -58,7 +69,7 @@ const Dashboard = () => {
     };
 
     fetchDebtInformation();
-  }, [toast]);
+  }, [phoneNumber, toast, navigate]);
 
   const handlePayment = () => {
     window.location.href = "/payment";

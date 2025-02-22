@@ -29,7 +29,7 @@ const Login = () => {
       return;
     }
     // Here you would verify the OTP
-    navigate("/dashboard");
+    navigate("/dashboard", { state: { phoneNumber } });
     toast.success("Login successful!");
   };
 
