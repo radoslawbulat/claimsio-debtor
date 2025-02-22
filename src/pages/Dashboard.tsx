@@ -13,6 +13,7 @@ interface DebtFile {
 }
 
 interface DebtCase {
+  id: string;  // Added this field
   debt_amount: number;
   debt_remaining: number;
   due_date: string;
@@ -43,6 +44,7 @@ const Dashboard = () => {
           const { data: caseData } = await supabase
             .from("cases")
             .select(`
+              id,
               debt_amount,
               debt_remaining,
               due_date,
