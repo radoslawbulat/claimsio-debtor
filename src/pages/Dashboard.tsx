@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CreditCard, Calendar, ArrowRight, FileText } from "lucide-react";
+import { CreditCard, Calendar, ArrowRight, FileText, User, Mail, Phone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/components/ui/use-toast";
@@ -14,6 +14,13 @@ interface DebtFile {
   storage_path: string;
 }
 
+interface Debtor {
+  first_name: string;
+  last_name: string;
+  email: string | null;
+  phone_number: string | null;
+}
+
 interface DebtCase {
   id: string;
   debt_amount: number;
@@ -22,6 +29,7 @@ interface DebtCase {
   case_description: string | null;
   case_number: string;
   files?: DebtFile[];
+  debtor?: Debtor;
 }
 
 const Dashboard = () => {
@@ -102,6 +110,30 @@ const Dashboard = () => {
           <p className="text-gray-500">View and manage your payment details</p>
         </div>
 
+        {debtCase.debtor && (
+          <Card className="p-6 space-y-4">
+            <h2 className="text-xl font-semibold text-gray-900">Personal Information</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex items-center gap-2 text-gray-600">
+                <User className="h-5 w-5" />
+                <span>{debtCase.debtor.first_name} {debtCase.debtor.last_name}</span>
+              </div>
+              {debtCase.debtor.email && (
+                <div className="flex items-center gap-2 text-gray-600">
+                  <Mail className="h-5 w-5" />
+                  <span>{debtCase.debtor.email}</span>
+                </div>
+              )}
+              {debtCase.debtor.phone_number && (
+                <div className="flex items-center gap-2 text-gray-600">
+                  <Phone className="h-5 w-5" />
+                  <span>{debtCase.debtor.phone_number}</span>
+                </div>
+              )}
+            </div>
+          </Card>
+        )}
+
         <Card className="p-6 space-y-6">
           <div className="space-y-2">
             <p className="text-sm text-gray-500">Total Outstanding</p>
@@ -117,14 +149,14 @@ const Dashboard = () => {
             </div>
             <div className="flex items-center gap-2 text-gray-600">
               <CreditCard className="h-5 w-5" />
-              <span>Account: {debtCase.case_number}</span>
+              <span>Case: {debtCase.case_number}</span>
             </div>
           </div>
         </Card>
 
         {debtCase.case_description && (
           <Card className="p-6">
-            <h2 className="text-xl font-semibold mb-4">Debt Description</h2>
+            <h2 className="text-xl font-semibold mb-4">Case Description</h2>
             <p className="text-gray-700">{debtCase.case_description}</p>
           </Card>
         )}
