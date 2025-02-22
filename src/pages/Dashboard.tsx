@@ -2,11 +2,12 @@
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CreditCard, Calendar, ArrowRight, FileText, User, Mail, Phone } from "lucide-react";
+import { CreditCard, Calendar, ArrowRight, FileText, User, Mail, Phone, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/components/ui/use-toast";
 import { useLocation, useNavigate } from "react-router-dom";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 interface DebtFile {
   file_name: string;
@@ -35,6 +36,8 @@ const Dashboard = () => {
   const [debtCase, setDebtCase] = useState<DebtCase | null>(null);
   const [documents, setDocuments] = useState<DebtFile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedFile, setSelectedFile] = useState<string | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const { toast } = useToast();
   const location = useLocation();
   const navigate = useNavigate();
@@ -95,6 +98,30 @@ const Dashboard = () => {
 
     fetchDebtInformation();
   }, [phoneNumber, toast, navigate]);
+
+  const handleViewFile = async (file: DebtFile) => {
+    try {
+      const { data: fileUrl, error } = await supabase.storage
+        .from('case-attachments')
+        .createSignedUrl(file.storage_path, 3600); // URL valid for 1 hour
+
+      if (error) {
+        throw error;
+      }
+
+      if (fileUrl) {
+        setSelectedFile(file.file_name);
+        setPreviewUrl(fileUrl.signedUrl);
+      }
+    } catch (error) {
+      console.error("Error getting file URL:", error);
+      toast({
+        title: "Error",
+        description: "Could not open the file. Please try again later.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handlePayment = () => {
     window.location.href = "/payment";
@@ -197,7 +224,12 @@ const Dashboard = () => {
                         )}
                       </div>
                     </div>
-                    <Button variant="ghost" size="sm" className="ml-2">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="ml-2"
+                      onClick={() => handleViewFile(file)}
+                    >
                       View
                     </Button>
                   </div>
@@ -223,8 +255,39 @@ const Dashboard = () => {
           </div>
         </Card>
       </div>
+
+      <Dialog open={!!previewUrl} onOpenChange={() => {
+        setPreviewUrl(null);
+        setSelectedFile(null);
+      }}>
+        <DialogContent className="max-w-4xl w-full">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold">{selectedFile}</h2>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setPreviewUrl(null);
+                setSelectedFile(null);
+              }}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+          <div className="relative w-full" style={{ height: "80vh" }}>
+            {previewUrl && (
+              <iframe
+                src={previewUrl}
+                className="w-full h-full border-0 rounded-md"
+                title="Document Preview"
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
 
 export default Dashboard;
+
