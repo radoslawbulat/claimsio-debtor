@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { CreditCard, Calendar, ArrowRight, FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useToast } from "@/components/ui/use-toast";
 
 interface DebtFile {
   file_name: string;
@@ -13,7 +14,7 @@ interface DebtFile {
 }
 
 interface DebtCase {
-  id: string;  // Added this field
+  id: string;
   debt_amount: number;
   debt_remaining: number;
   due_date: string;
@@ -25,6 +26,7 @@ interface DebtCase {
 const Dashboard = () => {
   const [debtCase, setDebtCase] = useState<DebtCase | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchDebtInformation = async () => {
@@ -32,50 +34,31 @@ const Dashboard = () => {
         // For now, we'll mock the phone number
         const mockPhoneNumber = "+48123456789";
 
-        // First, find the debtor by phone number
-        const { data: debtorData } = await supabase
-          .from("debtors")
-          .select("id")
-          .eq("phone_number", mockPhoneNumber)
-          .maybeSingle();
+        const { data, error } = await supabase.functions.invoke('get-debt-case', {
+          body: { phone_number: mockPhoneNumber }
+        });
 
-        if (debtorData) {
-          // Fetch the case information for this debtor
-          const { data: caseData } = await supabase
-            .from("cases")
-            .select(`
-              id,
-              debt_amount,
-              debt_remaining,
-              due_date,
-              case_description,
-              case_number
-            `)
-            .eq("debtor_id", debtorData.id)
-            .maybeSingle();
+        if (error) {
+          throw error;
+        }
 
-          if (caseData) {
-            // Fetch associated files
-            const { data: filesData } = await supabase
-              .from("case_attachments")
-              .select("*")
-              .eq("case_id", caseData.id);
-
-            setDebtCase({
-              ...caseData,
-              files: filesData || [],
-            });
-          }
+        if (data) {
+          setDebtCase(data);
         }
       } catch (error) {
         console.error("Error fetching debt information:", error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch debt information. Please try again later.",
+          variant: "destructive",
+        });
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchDebtInformation();
-  }, []);
+  }, [toast]);
 
   const handlePayment = () => {
     window.location.href = "/payment";
