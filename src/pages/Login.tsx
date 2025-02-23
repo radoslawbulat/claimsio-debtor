@@ -37,7 +37,7 @@ const Login = () => {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-50 to-gray-100">
       <Card className="w-full max-w-md p-8 space-y-6 animate-fadeIn">
         <div className="text-center space-y-2">
-          <h1 className="text-2xl font-semibold text-gray-900">Debtor Panel</h1>
+          <h1 className="text-2xl font-semibold text-gray-900">Debtor Access</h1>
           <p className="text-gray-500">Please login to access your account</p>
         </div>
 
