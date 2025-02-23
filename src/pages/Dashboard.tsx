@@ -208,7 +208,7 @@ const Dashboard = () => {
         <div className="space-y-1">
           <p className="font-medium">Case: {case_.case_number}</p>
           <p className="text-sm text-gray-500">
-            {case_.status === 'CLOSED' ? 'Paid' : 'Outstanding'}: ${case_.debt_remaining.toLocaleString()}
+            {case_.status === 'CLOSED' ? 'Paid' : 'Outstanding'}: ${(case_.status === 'CLOSED' ? case_.debt_amount : case_.debt_remaining).toLocaleString()}
           </p>
         </div>
         <span className={`px-3 py-1 rounded-full text-sm ${

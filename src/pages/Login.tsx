@@ -55,7 +55,7 @@ const Login = () => {
                 />
               </div>
               <Button
-                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+                className="w-full bg-black hover:bg-black/90 text-white"
                 onClick={handleSendOtp}
               >
                 Send OTP
@@ -75,7 +75,7 @@ const Login = () => {
                 />
               </div>
               <Button
-                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+                className="w-full bg-black hover:bg-black/90 text-white"
                 onClick={handleLogin}
               >
                 Verify & Login
