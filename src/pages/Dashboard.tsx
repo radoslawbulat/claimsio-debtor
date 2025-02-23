@@ -226,8 +226,8 @@ const Dashboard = () => {
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto space-y-8 animate-fadeIn">
         <div className="text-center space-y-2">
-          <h1 className="text-3xl font-semibold text-gray-900">Your Account</h1>
-          <p className="text-gray-500">View and manage your payment details</p>
+          <h1 className="text-3xl font-semibold text-gray-900">Your debts</h1>
+          <p className="text-gray-500">View and manage your payments and debts</p>
         </div>
 
         {debtCase.debtor && (
