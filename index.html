@@ -8,7 +8,14 @@
     <meta name="description" content="Lovable Generated Project" />
     <meta name="author" content="Lovable" />
     <meta property="og:image" content="/og-image.png" />
-    <base href="/" />
+    <script>
+      // Handle base URL for different environments
+      const base = document.createElement('base');
+      base.href = window.location.pathname.includes('/dashboard') 
+        ? window.location.pathname.split('/dashboard')[0] + '/'
+        : '/';
+      document.head.appendChild(base);
+    </script>
   </head>
 
   <body>

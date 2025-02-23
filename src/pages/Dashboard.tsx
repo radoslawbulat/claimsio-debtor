@@ -43,31 +43,26 @@ const Dashboard = () => {
   const { toast } = useToast();
   const location = useLocation();
   const navigate = useNavigate();
-  const phoneNumber = location.state?.phoneNumber;
+  
+  // Extract phoneNumber from location state or localStorage
+  const phoneNumber = location.state?.phoneNumber || localStorage.getItem('userPhoneNumber');
 
-  // Store phone number in localStorage when component mounts
   useEffect(() => {
-    if (phoneNumber) {
-      localStorage.setItem('userPhoneNumber', phoneNumber);
-    } else {
-      // Try to get phone number from localStorage if not provided in location state
-      const storedPhoneNumber = localStorage.getItem('userPhoneNumber');
-      if (!storedPhoneNumber) {
-        toast({
-          title: "Error",
-          description: "No phone number provided. Please login again.",
-          variant: "destructive",
-        });
-        navigate("/login");
-        return;
-      }
+    // If no phone number is available, redirect to login
+    if (!phoneNumber) {
+      toast({
+        title: "Error",
+        description: "No phone number provided. Please login again.",
+        variant: "destructive",
+      });
+      navigate("/login");
+      return;
     }
 
     const fetchDebtInformation = async () => {
       try {
-        const phoneToUse = phoneNumber || localStorage.getItem('userPhoneNumber');
         const { data, error } = await supabase.functions.invoke('get-debt-case', {
-          body: { phone_number: phoneToUse }
+          body: { phone_number: phoneNumber }
         });
 
         if (error) {
@@ -76,7 +71,7 @@ const Dashboard = () => {
 
         if (data) {
           setDebtCase(data);
-          setCases([data]); // Initialize cases with the current case
+          setCases([data]);
           // After getting the case data, fetch the documents
           if (data.id) {
             const { data: attachments, error: attachmentsError } = await supabase.functions.invoke('get-case-attachments', {
@@ -130,8 +125,9 @@ const Dashboard = () => {
         });
       }
       
-      // Clean up the URL
-      window.history.replaceState({}, '', window.location.pathname);
+      // Clean up the URL and preserve the route
+      const cleanUrl = window.location.pathname;
+      window.history.replaceState({}, '', cleanUrl);
     }
   }, [toast]);
 
@@ -169,7 +165,10 @@ const Dashboard = () => {
       return;
     }
     
-    // Navigate to payment link in same window
+    // Store current path before redirect
+    localStorage.setItem('returnPath', window.location.pathname);
+    
+    // Navigate to payment link
     window.location.href = debtCase.payment_link_url;
   };
 
