@@ -38,7 +38,7 @@ const Login = () => {
       <Card className="w-full max-w-md p-8 space-y-6 animate-fadeIn">
         <div className="text-center space-y-2">
           <h1 className="text-2xl font-semibold text-gray-900">Welcome</h1>
-          <p className="text-gray-500">Please login to access your account</p>
+          <p className="text-gray-500">Login to see your debts</p>
         </div>
 
         <div className="space-y-4">
@@ -48,7 +48,7 @@ const Login = () => {
                 <Phone className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
                 <Input
                   type="tel"
-                  placeholder="Enter your phone number"
+                  placeholder="Please use phone number to access your account"
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value)}
                   className="pl-10"
