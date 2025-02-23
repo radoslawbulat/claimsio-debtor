@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -136,7 +135,7 @@ const Dashboard = () => {
       });
       return;
     }
-    window.location.href = debtCase.payment_link_url;
+    window.open(debtCase.payment_link_url, '_blank');
   };
 
   if (isLoading) {
@@ -335,4 +334,3 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-
