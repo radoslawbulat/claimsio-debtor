@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CreditCard, Calendar, ArrowRight, FileText, User, Mail, Phone, CheckCircle } from "lucide-react";
+import { CreditCard, Calendar, ArrowRight, FileText, User, Mail, Phone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/components/ui/use-toast";
@@ -45,21 +45,29 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const phoneNumber = location.state?.phoneNumber;
 
+  // Store phone number in localStorage when component mounts
   useEffect(() => {
-    if (!phoneNumber) {
-      toast({
-        title: "Error",
-        description: "No phone number provided. Please login again.",
-        variant: "destructive",
-      });
-      navigate("/login");
-      return;
+    if (phoneNumber) {
+      localStorage.setItem('userPhoneNumber', phoneNumber);
+    } else {
+      // Try to get phone number from localStorage if not provided in location state
+      const storedPhoneNumber = localStorage.getItem('userPhoneNumber');
+      if (!storedPhoneNumber) {
+        toast({
+          title: "Error",
+          description: "No phone number provided. Please login again.",
+          variant: "destructive",
+        });
+        navigate("/login");
+        return;
+      }
     }
 
     const fetchDebtInformation = async () => {
       try {
+        const phoneToUse = phoneNumber || localStorage.getItem('userPhoneNumber');
         const { data, error } = await supabase.functions.invoke('get-debt-case', {
-          body: { phone_number: phoneNumber }
+          body: { phone_number: phoneToUse }
         });
 
         if (error) {
@@ -102,6 +110,31 @@ const Dashboard = () => {
     fetchDebtInformation();
   }, [phoneNumber, toast, navigate]);
 
+  // Check for Stripe return status
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const paymentStatus = searchParams.get('payment_status');
+    
+    if (paymentStatus) {
+      if (paymentStatus === 'success') {
+        toast({
+          title: "Success",
+          description: "Payment completed successfully!",
+          variant: "default",
+        });
+      } else if (paymentStatus === 'cancelled') {
+        toast({
+          title: "Information",
+          description: "Payment was cancelled.",
+          variant: "default",
+        });
+      }
+      
+      // Clean up the URL
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, [toast]);
+
   const handleViewFile = async (file: DebtFile) => {
     try {
       const { data: fileUrl, error } = await supabase.storage
@@ -135,7 +168,9 @@ const Dashboard = () => {
       });
       return;
     }
-    window.open(debtCase.payment_link_url, '_blank');
+    
+    // Navigate to payment link in same window
+    window.location.href = debtCase.payment_link_url;
   };
 
   if (isLoading) {
