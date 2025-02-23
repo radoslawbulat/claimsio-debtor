@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -41,7 +40,6 @@ const Dashboard = () => {
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [cases, setCases] = useState<DebtCase[]>([]);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
   const { toast } = useToast();
   const location = useLocation();
   const navigate = useNavigate();
@@ -137,7 +135,7 @@ const Dashboard = () => {
       });
       return;
     }
-    setShowPaymentModal(true);
+    window.open(debtCase.payment_link_url, '_blank');
   };
 
   if (isLoading) {
@@ -312,7 +310,6 @@ const Dashboard = () => {
         )}
       </div>
 
-      {/* Document preview modal */}
       <Dialog open={!!previewUrl} onOpenChange={() => {
         setPreviewUrl(null);
         setSelectedFile(null);
@@ -332,27 +329,8 @@ const Dashboard = () => {
           </div>
         </DialogContent>
       </Dialog>
-
-      {/* Payment modal */}
-      <Dialog open={showPaymentModal} onOpenChange={setShowPaymentModal}>
-        <DialogContent className="max-w-4xl w-full">
-          <div className="mb-4">
-            <h2 className="text-xl font-semibold">Make Payment</h2>
-          </div>
-          <div className="relative w-full" style={{ height: "80vh" }}>
-            {debtCase?.payment_link_url && (
-              <iframe
-                src={debtCase.payment_link_url}
-                className="w-full h-full border-0 rounded-md"
-                title="Payment Gateway"
-              />
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
 
 export default Dashboard;
-
